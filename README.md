@@ -1,48 +1,83 @@
-# 每日计划便签
+# Daily Plan Sticky / 每日计划便签
 
-一个轻量的 Windows 桌面悬浮便签，用来记录每日任务、完成时间和今日工作统计。
+A lightweight Windows desktop sticky daily planner and worklog app with time tracking, tray icon, startup launch, local CSV export, and a donation QR window.
 
-## 功能
+一个轻量的 Windows 桌面悬浮每日计划便签：写下任务、勾选完成、自动记录完成时间和耗时，所有数据默认保存在本地。
 
-- 手动输入任务，按 Enter 或点击 `+` 添加。
-- 窗口默认置顶，拖动顶部标题栏即可移动。
-- 每条任务右侧有完成方框，勾选后会先灰色停留一下，再从当前列表隐藏。
-- 每条任务可以编辑或删除，也可以双击任务文字编辑。
-- 完成记录写入 `completed_tasks.csv`，包含任务、开始时间、完成时间、花费时间、花费秒数和日期。
-- 底部显示未完成数量、今日完成数量和今日累计耗时。
-- 未完成任务保存在 `active_tasks.json`，下次打开继续显示。
-- 窗口位置、大小、是否置顶保存在 `settings.json`。
-- 支持开机启动和系统托盘。
+![Daily Plan Sticky screenshot](assets/screenshot-main.png)
 
-## 安装依赖
+## Why
+
+Most todo apps are too heavy for daily work notes. Daily Plan Sticky stays on your desktop, keeps tasks visible, and turns completed items into a simple worklog that can become daily reports, weekly reports, or billing records.
+
+很多计划工具太重，而这个工具只做一件事：把当天任务贴在桌面上。完成后自动沉淀为“完成事项 + 花费时间 + 日期”，方便写日报、周报或工时记录。
+
+## Features / 功能
+
+- Floating always-on-top Windows sticky note for daily tasks.
+- Tray-first behavior: the app keeps its icon in the system tray and does not occupy the Windows taskbar.
+- Add tasks manually with Enter or the `+` button.
+- Edit or delete each task; double-click task text to edit.
+- Check the box on the right to complete a task.
+- Completed tasks fade briefly, disappear from the active list, and are appended to `completed_tasks.csv`.
+- Local worklog fields: task, start time, completion time, duration, duration seconds, date.
+- Footer statistics: active tasks, today's completed count, today's total time.
+- Window position, size, startup setting, and topmost setting are remembered locally.
+- Optional startup launch and system tray menu.
+- Optional Alipay donation QR window via `alipay_qr.png`.
+
+## Install / 安装
+
+Install dependencies:
 
 ```powershell
 python -m pip install -r requirements.txt
 ```
 
-## 启动
+Run from source:
 
 ```powershell
 python daily_plan_sticky.py
 ```
 
-在 Windows 上也可以双击：
+On Windows, you can also double-click:
 
 ```text
 启动每日计划便签.bat
 ```
 
-## 文件说明
+## Download / 下载
 
-- `daily_plan_sticky.py`：主程序。
-- `启动每日计划便签.bat`：Windows 双击启动脚本。
-- `alipay_qr.png`：支持作者二维码，可替换为自己的收款码。
-- `active_tasks.json`：本地未完成任务，默认不会提交到 GitHub。
-- `completed_tasks.csv`：本地完成记录，默认不会提交到 GitHub。
-- `settings.json`：本地窗口和启动设置，默认不会提交到 GitHub。
+Packaged Windows builds are published from GitHub Releases when available:
 
-## 隐私
+[Releases](https://github.com/klsk007/daily-plan-sticky/releases)
 
-这个工具默认在本地保存任务和完成记录，不需要账号，也不会主动上传任务数据。
-如果这个小工具帮你少写了几次日报，欢迎请作者喝杯咖啡。
-软件会继续保持轻量、本地、无账号、无广告。
+## Build EXE / 打包
+
+```powershell
+python -m pip install pyinstaller
+pyinstaller --onefile --windowed --name DailyPlanSticky --add-data "alipay_qr.png;." daily_plan_sticky.py
+```
+
+The executable will be created under `dist/DailyPlanSticky.exe`.
+
+## Local Files / 本地文件
+
+- `active_tasks.json`: active tasks, ignored by Git.
+- `completed_tasks.csv`: completed worklog, ignored by Git.
+- `settings.json`: local window and startup settings, ignored by Git.
+- `alipay_qr.png`: optional donation QR code image.
+
+## Privacy / 隐私
+
+Daily Plan Sticky is local-first. It does not require an account and does not upload your tasks or worklog data by itself.
+
+每日计划便签默认只在本地保存任务和完成记录，不需要账号，也不会主动上传任务数据。
+
+## Keywords
+
+Windows desktop app, sticky notes, todo list, daily planner, worklog, time tracking, productivity, local-first, Python, Tkinter, tray icon, CSV export, daily report.
+
+## License
+
+MIT License.
