@@ -94,6 +94,10 @@ Daily Plan Sticky is local-first. It does not require an account and does not up
 
 每日计划便签默认只在本地保存任务和完成记录，不需要账号，也不会主动上传任务数据。
 
+This app is free to use and has no ads. If it saves you a few minutes writing daily reports or work logs, you can support continued maintenance from the in-app donation QR window.
+
+这个小工具免费使用、没有广告。如果它帮你少写了几次日报、周报或工时记录，欢迎通过软件里的“支持”二维码请作者喝杯咖啡，支持继续维护。
+
 ## Use Cases / 适合场景
 
 - Daily work planning
