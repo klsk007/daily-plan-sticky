@@ -1,6 +1,8 @@
 import csv
+import ctypes
 import json
 import os
+import sys
 import threading
 import uuid
 from dataclasses import asdict, dataclass
@@ -10,11 +12,26 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog
 
 
-APP_DIR = Path(__file__).resolve().parent
+def app_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def bundled_dir() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parent
+
+
+APP_DIR = app_dir()
+BUNDLED_DIR = bundled_dir()
 TASKS_FILE = APP_DIR / "active_tasks.json"
 COMPLETED_FILE = APP_DIR / "completed_tasks.csv"
 SETTINGS_FILE = APP_DIR / "settings.json"
 ALIPAY_QR_FILE = APP_DIR / "alipay_qr.png"
+BUNDLED_ALIPAY_QR_FILE = BUNDLED_DIR / "alipay_qr.png"
+ICON_FILE = BUNDLED_DIR / "assets" / "app-icon.ico"
 STARTUP_SHORTCUT_NAME = "每日计划便签.lnk"
 
 
@@ -66,9 +83,15 @@ class DailyPlanSticky:
         self.tray_icon = None
         self.tray_thread: threading.Thread | None = None
         self.is_exiting = False
+        self.taskbar_button_hidden = False
 
         self.root = tk.Tk()
         self.root.title("每日计划")
+        if ICON_FILE.exists():
+            try:
+                self.root.iconbitmap(ICON_FILE)
+            except Exception:
+                pass
         self.root.geometry(self.settings.get("geometry", "360x520+80+80"))
         self.root.minsize(320, 280)
         self.root.attributes("-topmost", bool(self.settings.get("topmost", True)))
@@ -79,6 +102,8 @@ class DailyPlanSticky:
         self.ensure_startup_shortcut()
         self.build_ui()
         self.render_tasks()
+        self.ensure_tray_icon()
+        self.root.after(100, self.hide_taskbar_button)
 
     def build_ui(self) -> None:
         self.header = tk.Frame(self.root, bg="#283845", height=36, cursor="fleur")
@@ -157,12 +182,7 @@ class DailyPlanSticky:
         entry_row = tk.Frame(self.root, bg="#f7f1d5")
         entry_row.pack(fill="x", padx=12, pady=(12, 8))
 
-        self.task_entry = tk.Entry(
-            entry_row,
-            font=("Microsoft YaHei UI", 10),
-            relief="solid",
-            bd=1,
-        )
+        self.task_entry = tk.Entry(entry_row, font=("Microsoft YaHei UI", 10), relief="solid", bd=1)
         self.task_entry.pack(side="left", fill="x", expand=True, ipady=5)
         self.task_entry.bind("<Return>", lambda _event: self.add_task())
 
@@ -183,15 +203,9 @@ class DailyPlanSticky:
         self.list_outer = tk.Frame(self.root, bg="#f7f1d5")
         self.list_outer.pack(fill="both", expand=True, padx=12, pady=(0, 10))
 
-        self.canvas = tk.Canvas(
-            self.list_outer,
-            bg="#f7f1d5",
-            highlightthickness=0,
-            borderwidth=0,
-        )
+        self.canvas = tk.Canvas(self.list_outer, bg="#f7f1d5", highlightthickness=0, borderwidth=0)
         self.scrollbar = tk.Scrollbar(self.list_outer, orient="vertical", command=self.canvas.yview)
         self.tasks_frame = tk.Frame(self.canvas, bg="#f7f1d5")
-
         self.tasks_frame.bind(
             "<Configure>",
             lambda _event: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
@@ -199,7 +213,6 @@ class DailyPlanSticky:
         self.canvas_window = self.canvas.create_window((0, 0), window=self.tasks_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.bind("<Configure>", self.resize_task_frame)
-
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
 
@@ -227,8 +240,32 @@ class DailyPlanSticky:
         )
         open_log_btn.pack(side="right", padx=8)
 
+    def hide_taskbar_button(self) -> None:
+        if os.name != "nt" or self.taskbar_button_hidden:
+            return
+        try:
+            user32 = ctypes.windll.user32
+            hwnd = self.root.winfo_id()
+            parent_hwnd = user32.GetParent(hwnd)
+            hwnds = [hwnd]
+            if parent_hwnd:
+                hwnds.append(parent_hwnd)
+            gwl_exstyle = -20
+            ws_ex_appwindow = 0x00040000
+            ws_ex_toolwindow = 0x00000080
+            self.root.withdraw()
+            for target_hwnd in hwnds:
+                style = user32.GetWindowLongW(target_hwnd, gwl_exstyle)
+                style = (style & ~ws_ex_appwindow) | ws_ex_toolwindow
+                user32.SetWindowLongW(target_hwnd, gwl_exstyle, style)
+            self.taskbar_button_hidden = True
+            self.root.after(50, self.show_from_tray)
+        except Exception:
+            pass
+
     def show_donation(self) -> None:
-        if not ALIPAY_QR_FILE.exists():
+        qr_file = ALIPAY_QR_FILE if ALIPAY_QR_FILE.exists() else BUNDLED_ALIPAY_QR_FILE
+        if not qr_file.exists():
             messagebox.showinfo(
                 "支持作者",
                 f"把支付宝收款码图片保存为：\n{ALIPAY_QR_FILE}\n\n之后点“支持”就会显示收款码。",
@@ -236,9 +273,9 @@ class DailyPlanSticky:
             )
             return
 
-        if Image is None:
+        if Image is None or ImageTk is None:
             try:
-                os.startfile(ALIPAY_QR_FILE)
+                os.startfile(qr_file)
             except Exception as exc:
                 messagebox.showerror("打开失败", f"无法打开收款码：\n{exc}", parent=self.root)
             return
@@ -250,7 +287,7 @@ class DailyPlanSticky:
         win.attributes("-topmost", bool(self.root.attributes("-topmost")))
 
         try:
-            original = Image.open(ALIPAY_QR_FILE)
+            original = Image.open(qr_file)
             original.thumbnail((320, 320))
             photo = ImageTk.PhotoImage(original)
         except Exception as exc:
@@ -258,13 +295,18 @@ class DailyPlanSticky:
             win.destroy()
             return
 
-        label = tk.Label(win, text="如果这个小工具帮你少写了几次日报，欢迎支持维护。", bg="#f7f1d5", fg="#283845")
-        label.pack(padx=14, pady=(12, 8))
+        tk.Label(
+            win,
+            text="如果这个小工具帮你少写了几次日报，欢迎支持维护。",
+            bg="#f7f1d5",
+            fg="#283845",
+        ).pack(padx=14, pady=(12, 8))
         image_label = tk.Label(win, image=photo, bg="#f7f1d5")
         image_label.image = photo
         image_label.pack(padx=14, pady=(0, 12))
-        close_btn = tk.Button(win, text="关闭", command=win.destroy, bg="#2f6f73", fg="white", bd=0, padx=18, pady=5)
-        close_btn.pack(pady=(0, 12))
+        tk.Button(win, text="关闭", command=win.destroy, bg="#2f6f73", fg="white", bd=0, padx=18, pady=5).pack(
+            pady=(0, 12)
+        )
 
     def load_settings(self) -> dict:
         if not SETTINGS_FILE.exists():
@@ -284,10 +326,7 @@ class DailyPlanSticky:
         if self.root.state() == "normal":
             self.settings["geometry"] = self.root.geometry()
         self.settings["topmost"] = bool(self.root.attributes("-topmost"))
-        SETTINGS_FILE.write_text(
-            json.dumps(self.settings, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        SETTINGS_FILE.write_text(json.dumps(self.settings, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def on_configure(self, _event: tk.Event) -> None:
         if self.geometry_save_after is not None:
@@ -345,26 +384,16 @@ class DailyPlanSticky:
 
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortcut(str(shortcut_path))
-            shortcut.TargetPath = str(APP_DIR / "启动每日计划便签.bat")
+            if getattr(sys, "frozen", False):
+                shortcut.TargetPath = str(Path(sys.executable).resolve())
+            else:
+                shortcut.TargetPath = str(APP_DIR / "启动每日计划便签.bat")
             shortcut.WorkingDirectory = str(APP_DIR)
             shortcut.WindowStyle = 7
             shortcut.Description = "每日计划悬浮便签"
             shortcut.Save()
         except Exception:
-            try:
-                import pythoncom
-                from win32com.client import Dispatch
-
-                pythoncom.CoInitialize()
-                shell = Dispatch("WScript.Shell")
-                shortcut = shell.CreateShortcut(str(shortcut_path))
-                shortcut.TargetPath = str(APP_DIR / "启动每日计划便签.bat")
-                shortcut.WorkingDirectory = str(APP_DIR)
-                shortcut.WindowStyle = 7
-                shortcut.Description = "每日计划悬浮便签"
-                shortcut.Save()
-            except Exception:
-                pass
+            pass
 
     def load_tasks(self) -> list[Task]:
         if not TASKS_FILE.exists():
@@ -377,10 +406,7 @@ class DailyPlanSticky:
             return []
 
     def save_tasks(self) -> None:
-        TASKS_FILE.write_text(
-            json.dumps([asdict(task) for task in self.tasks], ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        TASKS_FILE.write_text(json.dumps([asdict(task) for task in self.tasks], ensure_ascii=False, indent=2), encoding="utf-8")
 
     def add_task(self) -> None:
         text = self.task_entry.get().strip()
@@ -611,6 +637,7 @@ class DailyPlanSticky:
     def show_from_tray(self) -> None:
         self.root.deiconify()
         self.root.lift()
+        self.root.after(50, self.hide_taskbar_button)
         if bool(self.root.attributes("-topmost")):
             self.root.attributes("-topmost", False)
             self.root.attributes("-topmost", True)
