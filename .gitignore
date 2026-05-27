@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+
+# Local user data
+active_tasks.json
+completed_tasks.csv
+settings.json
+
+# Local build outputs
+dist/
+build/
+*.spec
+
+# Editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
