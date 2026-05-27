@@ -1,32 +1,48 @@
 # Daily Plan Sticky / 每日计划便签
 
-A lightweight Windows desktop sticky daily planner and worklog app with time tracking, tray icon, startup launch, local CSV export, and a donation QR window.
+Daily Plan Sticky is a small Windows desktop app for keeping today's tasks visible and turning completed work into a local time log.
 
-一个轻量的 Windows 桌面悬浮每日计划便签：写下任务、勾选完成、自动记录完成时间和耗时，所有数据默认保存在本地。
+每日计划便签是一个轻量的 Windows 桌面工具：把当天任务贴在桌面上，完成后自动记录任务、日期和耗时。
 
 ![Daily Plan Sticky screenshot](assets/screenshot-main.png)
 
-## Why
+## What It Does / 它能做什么
 
-Most todo apps are too heavy for daily work notes. Daily Plan Sticky stays on your desktop, keeps tasks visible, and turns completed items into a simple worklog that can become daily reports, weekly reports, or billing records.
+- Keeps a compact task note on your desktop.
+- Runs from the system tray, without occupying the Windows taskbar.
+- Adds tasks manually with Enter or the `+` button.
+- Lets you edit, delete, and complete tasks.
+- Hides completed tasks after a short fade.
+- Saves completed items to `completed_tasks.csv`.
+- Shows today's completed count and total time.
+- Remembers window size, position, topmost mode, and startup preference.
+- Stores data locally by default.
 
-很多计划工具太重，而这个工具只做一件事：把当天任务贴在桌面上。完成后自动沉淀为“完成事项 + 花费时间 + 日期”，方便写日报、周报或工时记录。
+中文概括：
 
-## Features / 功能
+- 桌面悬浮显示今日任务。
+- 运行后只保留右下角系统托盘图标，不占底部任务栏。
+- 支持手动添加、编辑、删除和勾选完成。
+- 完成后任务会短暂变灰，然后从当前列表隐藏。
+- 自动把完成记录写入 `completed_tasks.csv`。
+- 底部显示今日完成数量和累计耗时。
+- 自动记住窗口位置、大小、置顶状态和开机启动设置。
+- 默认本地保存，不需要账号。
 
-- Floating always-on-top Windows sticky note for daily tasks.
-- Tray-first behavior: the app keeps its icon in the system tray and does not occupy the Windows taskbar.
-- Add tasks manually with Enter or the `+` button.
-- Edit or delete each task; double-click task text to edit.
-- Check the box on the right to complete a task.
-- Completed tasks fade briefly, disappear from the active list, and are appended to `completed_tasks.csv`.
-- Local worklog fields: task, start time, completion time, duration, duration seconds, date.
-- Footer statistics: active tasks, today's completed count, today's total time.
-- Window position, size, startup setting, and topmost setting are remembered locally.
-- Optional startup launch and system tray menu.
-- Optional Alipay donation QR window via `alipay_qr.png`.
+## Download / 下载
 
-## Install / 安装
+Windows executable builds are available from the Releases page:
+
+[GitHub Releases](https://github.com/klsk007/daily-plan-sticky/releases)
+
+If no public release is visible yet, the latest build may still be in draft review.
+
+## Run From Source / 从源码运行
+
+Requirements:
+
+- Windows
+- Python 3.10+
 
 Install dependencies:
 
@@ -34,49 +50,59 @@ Install dependencies:
 python -m pip install -r requirements.txt
 ```
 
-Run from source:
+Run:
 
 ```powershell
 python daily_plan_sticky.py
 ```
 
-On Windows, you can also double-click:
+Or double-click:
 
 ```text
 启动每日计划便签.bat
 ```
 
-## Download / 下载
-
-Packaged Windows builds are published from GitHub Releases when available:
-
-[Releases](https://github.com/klsk007/daily-plan-sticky/releases)
-
-## Build EXE / 打包
+## Build EXE / 打包 EXE
 
 ```powershell
 python -m pip install pyinstaller
-pyinstaller --onefile --windowed --name DailyPlanSticky --add-data "alipay_qr.png;." daily_plan_sticky.py
+python -m PyInstaller --onefile --windowed --name DailyPlanSticky --icon assets\app-icon.ico --add-data "alipay_qr.png;." --add-data "assets\app-icon.ico;assets" daily_plan_sticky.py
 ```
 
-The executable will be created under `dist/DailyPlanSticky.exe`.
+The output file is:
 
-## Local Files / 本地文件
+```text
+dist\DailyPlanSticky.exe
+```
 
-- `active_tasks.json`: active tasks, ignored by Git.
-- `completed_tasks.csv`: completed worklog, ignored by Git.
-- `settings.json`: local window and startup settings, ignored by Git.
-- `alipay_qr.png`: optional donation QR code image.
+## Local Data / 本地数据
+
+The app writes these files next to the script or executable:
+
+| File | Purpose |
+| --- | --- |
+| `active_tasks.json` | Active unfinished tasks |
+| `completed_tasks.csv` | Completed task log |
+| `settings.json` | Window and startup settings |
+| `alipay_qr.png` | Optional support/donation QR image |
+
+These local user-data files are ignored by Git.
 
 ## Privacy / 隐私
 
-Daily Plan Sticky is local-first. It does not require an account and does not upload your tasks or worklog data by itself.
+Daily Plan Sticky is local-first. It does not require an account and does not upload task data by itself.
 
 每日计划便签默认只在本地保存任务和完成记录，不需要账号，也不会主动上传任务数据。
 
-## Keywords
+## Use Cases / 适合场景
 
-Windows desktop app, sticky notes, todo list, daily planner, worklog, time tracking, productivity, local-first, Python, Tkinter, tray icon, CSV export, daily report.
+- Daily work planning
+- Remote-work logs
+- Freelance billing notes
+- Research or lab daily records
+- Daily report and weekly report material
+
+适合：每日计划、远程办公记录、自由职业工时、科研/实验室日报、周报素材整理。
 
 ## License
 
